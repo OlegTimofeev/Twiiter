@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"github.com/gorilla/mux"
-	"log"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -78,12 +77,7 @@ func updateTweet(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	r := mux.NewRouter()
-	tweets = append(tweets, Tweet{ID: "1", Time: time.Now().Format("2006-01-02 15:04"), Text: "I love u", Author: "Daria"})
-	tweets = append(tweets, Tweet{ID: "2", Time: time.Now().Format("2006-01-02 15:04"), Text: "I love u 2 Daria", Author: "Oleg"})
-	r.HandleFunc("/tweets", getTweets).Methods("GET")
-	r.HandleFunc("/tweets/{id}", getTweet).Methods("GET")
-	r.HandleFunc("/tweets", createTweet).Methods("POST")
-	r.HandleFunc("/tweets/{id}", updateTweet).Methods("PUT")
-	r.HandleFunc("/tweets/{id}", deleteTweet).Methods("DELETE")
-	log.Fatal(http.ListenAndServe(":8000", r))
+	r.Handle("/", http.FileServer(http.Dir("./views/")))
+	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
+	http.ListenAndServe(":3000", r)
 }
