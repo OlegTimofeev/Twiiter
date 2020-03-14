@@ -29,8 +29,7 @@ func signUp(c echo.Context) error {
 	us.ID = strconv.Itoa(rand.Intn(1000))
 	er := json.NewDecoder(c.Request().Body).Decode(&us)
 	if er == nil {
-		users = append(users, *us)
-		tweets[us.ID] = nil
+		bd.addUser(*us)
 		return GetToken(c, *us)
 	}
 	return c.JSON(http.StatusOK, errNoAuth)
@@ -39,10 +38,8 @@ func signUp(c echo.Context) error {
 func signIn(c echo.Context) error {
 	var loginUser User
 	json.NewDecoder(c.Request().Body).Decode(&loginUser)
-	for _, bdUser := range users {
-		if loginUser.Login == bdUser.Login && loginUser.Password == bdUser.Password {
-			return GetToken(c, bdUser)
-		}
+	if us, isFinded := bd.checkLoginPassword(loginUser.Login, loginUser.Password); isFinded {
+		return GetToken(c, *us)
 	}
 	return c.JSON(http.StatusOK, errNoAuth)
 }

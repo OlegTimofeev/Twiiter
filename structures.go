@@ -2,7 +2,7 @@ package main
 
 import "github.com/dgrijalva/jwt-go"
 
-type Error struct {
+type Alert struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
