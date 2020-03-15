@@ -16,10 +16,11 @@ type User struct {
 }
 
 type Tweet struct {
-	ID     string `json:"id"`
-	Time   string `json:"time"`
-	Author string `json:"author"`
-	Text   string `json:"text"`
+	ID       string `json:"id"`
+	Time     string `json:"time"`
+	Author   string `json:"author"`
+	AuthorID string `json:"authorId"`
+	Text     string `json:"text"`
 }
 
 type jwtUserClaim struct {

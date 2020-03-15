@@ -14,15 +14,16 @@ type Store interface {
 	addUser(user User)
 	getUserById(userId string) User
 	checkLoginPassword(login string, password string) bool
+	getUserTweets(authorId string) []Tweet
 }
 
-type mapa struct {
+type MapStore struct {
 	users  []User
 	tweets map[string][]Tweet
 }
 
-func (mapa) getUserById(userId string) *User {
-	for _, item := range users {
+func (mapStore *MapStore) getUserById(userId string) *User {
+	for _, item := range mapStore.users {
 		if item.ID == userId {
 			return &item
 		}
@@ -30,37 +31,37 @@ func (mapa) getUserById(userId string) *User {
 	return nil
 }
 
-func (mapa) getTweets() []Tweet {
+func (mapStore *MapStore) getTweets() []Tweet {
 	var allTweets []Tweet
-	for _, us := range users {
-		allTweets = append(allTweets, tweets[us.ID]...)
+	for _, us := range mapStore.users {
+		allTweets = append(allTweets, mapStore.tweets[us.ID]...)
 	}
 	sort.Sort(byId(allTweets))
 	return allTweets
 }
 
-func (mapa) deleteTweet(tweetId string, userId string) bool {
-	for index, twt := range tweets[userId] {
+func (mapStore *MapStore) deleteTweet(tweetId string, userId string) bool {
+	for index, twt := range mapStore.tweets[userId] {
 		if twt.ID == tweetId {
-			twts := append(tweets[userId][:index], tweets[userId][index+1:]...)
-			tweets[userId] = twts
+			twts := append(mapStore.tweets[userId][:index], mapStore.tweets[userId][index+1:]...)
+			mapStore.tweets[userId] = twts
 			return true
 		}
 	}
 	return false
 }
 
-func (mapa) addUser(user User) {
-	users = append(users, user)
+func (mapStore *MapStore) addUser(user User) {
+	mapStore.users = append(mapStore.users, user)
 }
 
-func (mapa) addTweet(tweet Tweet, user User) {
-	tweets[user.ID] = append(tweets[user.ID], tweet)
+func (mapStore *MapStore) addTweet(tweet Tweet, user User) {
+	mapStore.tweets[user.ID] = append(mapStore.tweets[user.ID], tweet)
 }
 
-func (mapa) getTweet(id string) *Tweet {
-	for us := range tweets {
-		for _, twt := range tweets[us] {
+func (mapStore *MapStore) getTweet(id string) *Tweet {
+	for us := range mapStore.tweets {
+		for _, twt := range mapStore.tweets[us] {
 			if twt.ID == id {
 				return &twt
 			}
@@ -69,10 +70,10 @@ func (mapa) getTweet(id string) *Tweet {
 	return nil
 }
 
-func (mapa) updateTweet(tweetId string, userId string, text string) bool {
-	for index, twt := range tweets[userId] {
+func (mapStore *MapStore) updateTweet(tweetId string, userId string, text string) bool {
+	for index, twt := range mapStore.tweets[userId] {
 		if twt.ID == tweetId {
-			changeTweet := &tweets[userId][index]
+			changeTweet := &mapStore.tweets[userId][index]
 			changeTweet.Text = text
 			changeTweet.Time = time.Now().Format("2006-01-02 15:04")
 
@@ -82,11 +83,17 @@ func (mapa) updateTweet(tweetId string, userId string, text string) bool {
 	return false
 }
 
-func (mapa) checkLoginPassword(login string, password string) (*User, bool) {
-	for _, bdUser := range users {
+func (mapStore *MapStore) checkLoginPassword(login string, password string) (*User, bool) {
+	for _, bdUser := range mapStore.users {
 		if login == bdUser.Login && password == bdUser.Password {
 			return &bdUser, true
 		}
 	}
 	return nil, false
+}
+
+func (mapStore *MapStore) getUserTweets(authorId string) []Tweet {
+	userTweets := mapStore.tweets[authorId]
+	sort.Sort(byId(userTweets))
+	return userTweets
 }
