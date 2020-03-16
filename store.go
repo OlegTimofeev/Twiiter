@@ -89,7 +89,7 @@ func (ms *MapStore) updateTweet(tweetID string, userID string, text string) bool
 		if twt.ID == tweetID {
 			changeTweet := &ms.tweets[userID][index]
 			changeTweet.Text = text
-			changeTweet.Time = time.Now().Format("2006-01-02 15:04")
+			changeTweet.Time = time.Now()
 
 			return true
 		}

@@ -1,6 +1,9 @@
 package main
 
-import "github.com/dgrijalva/jwt-go"
+import (
+	"github.com/dgrijalva/jwt-go"
+	"time"
+)
 
 type Alert struct {
 	Name        string `json:"name"`
@@ -16,11 +19,11 @@ type User struct {
 }
 
 type Tweet struct {
-	ID       string `json:"id"`
-	Time     string `json:"time"`
-	Author   string `json:"author"`
-	AuthorID string `json:"authorID"`
-	Text     string `json:"text"`
+	ID       string    `json:"id"`
+	Time     time.Time `json:"time"`
+	Author   string    `json:"author"`
+	AuthorID string    `json:"authorID"`
+	Text     string    `json:"text"`
 }
 
 type jwtUserClaim struct {

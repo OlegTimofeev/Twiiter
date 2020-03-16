@@ -20,8 +20,8 @@ var db = &MapStore{tweets: make(map[string][]Tweet), userID: 5, tweetID: 5}
 func initData() {
 	us1 := User{Login: "www", Password: "123", Name: "Ol", Surname: "eg"}
 	us2 := User{Login: "wwww", Password: "123", Name: "Da", Surname: "ria"}
-	db.addTweet(Tweet{Time: time.Now().Format("2006-01-02 15:04"), Text: "I love u", Author: "Daria"}, db.addUser(us2))
-	db.addTweet(Tweet{Time: time.Now().Format("2006-01-02 15:04"), Text: "I love u 2 Daria", Author: "Oleg"}, db.addUser(us1))
+	db.addTweet(Tweet{Time: time.Now(), Text: "I love u", Author: "Daria"}, db.addUser(us2))
+	db.addTweet(Tweet{Time: time.Now(), Text: "I love u 2 Daria", Author: "Oleg"}, db.addUser(us1))
 }
 
 func deleteTweet(c echo.Context) error {
@@ -77,7 +77,7 @@ func createTweet(c echo.Context) error {
 	}
 	var tweet Tweet
 	json.NewDecoder(c.Request().Body).Decode(&tweet)
-	tweet.Time = time.Now().Format("2006-01-02 15:04")
+	tweet.Time = time.Now()
 	tweet.Author = us.Name + " " + us.Surname
 	return c.JSON(http.StatusOK, db.addTweet(tweet, *us))
 }

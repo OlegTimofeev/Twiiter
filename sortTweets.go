@@ -12,7 +12,7 @@ func (t byTime) Swap(i, j int) {
 }
 
 func (t byTime) Less(i, j int) bool {
-	return t[i].Time > t[j].Time
+	return t[i].Time.Before(t[j].Time)
 }
 
 func (t byID) Len() int {
