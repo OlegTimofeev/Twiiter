@@ -1,7 +1,7 @@
 package main
 
 type byTime []Tweet
-type byId []Tweet
+type byID []Tweet
 
 func (t byTime) Len() int {
 	return len(t)
@@ -15,14 +15,14 @@ func (t byTime) Less(i, j int) bool {
 	return t[i].Time > t[j].Time
 }
 
-func (t byId) Len() int {
+func (t byID) Len() int {
 	return len(t)
 }
 
-func (t byId) Swap(i, j int) {
+func (t byID) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
-func (t byId) Less(i, j int) bool {
+func (t byID) Less(i, j int) bool {
 	return t[i].ID > t[j].ID
 }

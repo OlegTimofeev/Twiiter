@@ -19,7 +19,7 @@ type Tweet struct {
 	ID       string `json:"id"`
 	Time     string `json:"time"`
 	Author   string `json:"author"`
-	AuthorID string `json:"authorId"`
+	AuthorID string `json:"authorID"`
 	Text     string `json:"text"`
 }
 

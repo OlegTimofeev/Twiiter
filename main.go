@@ -7,40 +7,21 @@ import (
 	"github.com/labstack/echo/middleware"
 	"log"
 	"net/http"
-	"strconv"
-	"sync"
 	"time"
 )
 
-var tweetId = 3
-var userId = 5
-var mutex = &sync.Mutex{}
 var errNoAuth = Alert{Name: "Not Auth", Description: "Auth to create,update or delete twit"}
 var errNoTweet = Alert{Name: "No Tweet", Description: "Not find tweet "}
 var errUndable = Alert{Name: "Unable", Description: "Unable to finish operation"}
 var ok = Alert{Name: "OK", Description: "Operation finished"}
 
-var db = MapStore{tweets: make(map[string][]Tweet)}
+var db = &MapStore{tweets: make(map[string][]Tweet), userID: 5, tweetID: 5}
 
 func initData() {
-	us1 := User{ID: "3", Login: "www", Password: "123", Name: "Ol", Surname: "eg"}
-	us2 := User{ID: "4", Login: "wwww", Password: "123", Name: "Da", Surname: "ria"}
-	db.addUser(us1)
-	db.addUser(us2)
-	db.addTweet(Tweet{ID: "1", Time: time.Now().Format("2006-01-02 15:04"), Text: "I love u", Author: "Daria"}, us2)
-	db.addTweet(Tweet{ID: "2", Time: time.Now().Format("2006-01-02 15:04"), Text: "I love u 2 Daria", Author: "Oleg"}, us1)
-}
-
-func getTweetId() int {
-	returnId := tweetId
-	tweetId++
-	return returnId
-}
-
-func getUserId() int {
-	returnId := userId
-	userId++
-	return returnId
+	us1 := User{Login: "www", Password: "123", Name: "Ol", Surname: "eg"}
+	us2 := User{Login: "wwww", Password: "123", Name: "Da", Surname: "ria"}
+	db.addTweet(Tweet{Time: time.Now().Format("2006-01-02 15:04"), Text: "I love u", Author: "Daria"}, db.addUser(us2))
+	db.addTweet(Tweet{Time: time.Now().Format("2006-01-02 15:04"), Text: "I love u 2 Daria", Author: "Oleg"}, db.addUser(us1))
 }
 
 func deleteTweet(c echo.Context) error {
@@ -65,7 +46,7 @@ func getUser(c echo.Context) *User {
 	user := c.Get("user").(*jwt.Token)
 	claims := user.Claims.(*jwtUserClaim)
 	id := claims.ID
-	return db.getUserById(id)
+	return db.getUserByID(id)
 }
 
 func getTweets(c echo.Context) error {
@@ -82,7 +63,7 @@ func getTweet(c echo.Context) error {
 }
 
 func getUserTweets(c echo.Context) error {
-	userTweets := db.getUserTweets(c.Param("authorId"))
+	userTweets := db.getUserTweets(c.Param("authorID"))
 	if len(userTweets) == 0 {
 		return c.JSON(http.StatusOK, errNoTweet)
 	}
@@ -96,14 +77,9 @@ func createTweet(c echo.Context) error {
 	}
 	var tweet Tweet
 	json.NewDecoder(c.Request().Body).Decode(&tweet)
-	mutex.Lock()
-	tweet.ID = strconv.Itoa(getTweetId())
-	mutex.Unlock()
 	tweet.Time = time.Now().Format("2006-01-02 15:04")
 	tweet.Author = us.Name + " " + us.Surname
-	tweet.AuthorID = us.ID
-	db.addTweet(tweet, *us)
-	return c.JSON(http.StatusOK, tweet)
+	return c.JSON(http.StatusOK, db.addTweet(tweet, *us))
 }
 
 func main() {
@@ -122,7 +98,7 @@ func main() {
 	e.POST("", createTweet)
 	e.PUT("/:id", updateTweet)
 	e.DELETE("/:id", deleteTweet)
-	r.GET("/main/author/:authorId", getUserTweets)
+	r.GET("/main/author/:authorID", getUserTweets)
 	r.GET("/main", getTweets)
 	r.GET("/main/:id", getTweet)
 	r.POST("/signUp", signUp)
