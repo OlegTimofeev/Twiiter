@@ -29,7 +29,7 @@ func signUp(c echo.Context) error {
 
 		return userTokenResponse(c, *db.addUser(*us))
 	}
-	return c.JSON(http.StatusOK, errNoAuth)
+	return c.JSON(http.StatusBadRequest, errBadReq)
 }
 
 func signIn(c echo.Context) error {
