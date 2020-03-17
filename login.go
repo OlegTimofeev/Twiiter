@@ -27,7 +27,7 @@ func signUp(c echo.Context) error {
 	er := json.NewDecoder(c.Request().Body).Decode(&us)
 	if er == nil {
 
-		return userTokenResponse(c, db.addUser(*us))
+		return userTokenResponse(c, *db.addUser(*us))
 	}
 	return c.JSON(http.StatusOK, errNoAuth)
 }
