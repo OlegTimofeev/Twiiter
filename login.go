@@ -25,11 +25,10 @@ func userTokenResponse(c echo.Context, us User) error {
 func signUp(c echo.Context) error {
 	us := new(User)
 	er := json.NewDecoder(c.Request().Body).Decode(&us)
-	if er == nil {
-
-		return userTokenResponse(c, *db.addUser(*us))
+	if er != nil {
+		return c.JSON(http.StatusBadRequest, errBadReq)
 	}
-	return c.JSON(http.StatusBadRequest, errBadReq)
+	return userTokenResponse(c, *db.addUser(us))
 }
 
 func signIn(c echo.Context) error {

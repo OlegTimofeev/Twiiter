@@ -15,18 +15,18 @@ var errNoTweet = Alert{Name: "No Tweet", Description: "Not find tweet "}
 var errUnable = Alert{Name: "Unable", Description: "Unable to finish operation"}
 var errBadReq = Alert{Name: "Bad Request", Description: "Error.Bad Request"}
 var ok = Alert{Name: "OK", Description: "Operation finished"}
-
-var db = &MapStore{tweets: make(map[string][]Tweet), userID: 5, tweetID: 5}
+var db *MapStore
 
 func initData() {
+	db = &MapStore{tweets: make(map[string][]*Tweet), userID: 1, tweetID: 1}
 	us1 := User{Login: "www", Password: "123", Name: "Ol", Surname: "eg"}
 	us2 := User{Login: "wwww", Password: "123", Name: "Da", Surname: "ria"}
-	db.addTweet(Tweet{Time: time.Now(), Text: "I love u", Author: "Daria"}, *db.addUser(us2))
-	db.addTweet(Tweet{Time: time.Now(), Text: "I love u 2 Daria", Author: "Oleg"}, *db.addUser(us1))
+	db.addTweet(&Tweet{Time: time.Now(), Text: "I love u", Author: "Daria"}, db.addUser(&us2))
+	db.addTweet(&Tweet{Time: time.Now(), Text: "I love u 2 Daria", Author: "Oleg"}, db.addUser(&us1))
 }
 
 func deleteTweet(c echo.Context) error {
-	if db.deleteTweet(c.Param("id"), *getUser(c)) {
+	if db.deleteTweet(c.Param("id"), getUser(c)) {
 		return c.JSON(http.StatusOK, ok)
 	}
 
@@ -37,13 +37,13 @@ func updateTweet(c echo.Context) error {
 	us := getUser(c)
 	var twt Tweet
 	err := json.NewDecoder(c.Request().Body).Decode(&twt)
-	if err == nil {
-		if db.updateTweet(c.Param("id"), *us, twt.Text) {
-			return c.JSON(http.StatusOK, ok)
-		}
-		return c.JSON(http.StatusOK, errUnable)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, errBadReq)
 	}
-	return c.JSON(http.StatusBadRequest, errBadReq)
+	if db.updateTweet(c.Param("id"), us, twt.Text) {
+		return c.JSON(http.StatusOK, ok)
+	}
+	return c.JSON(http.StatusOK, errUnable)
 }
 
 func getUser(c echo.Context) *User {
@@ -54,11 +54,7 @@ func getUser(c echo.Context) *User {
 }
 
 func getTweets(c echo.Context) error {
-	err := c.JSON(http.StatusOK, db.getTweets())
-	if err == nil {
-		return c.String(http.StatusOK, "That's all folks")
-	}
-	return c.String(http.StatusBadGateway, "Sorry")
+	return c.JSON(http.StatusOK, db.getTweets())
 }
 
 func getTweet(c echo.Context) error {
@@ -71,7 +67,7 @@ func getTweet(c echo.Context) error {
 
 func getUserTweets(c echo.Context) error {
 	userTweets := db.getUserTweets(c.Param("authorID"))
-	if len(*userTweets) == 0 {
+	if len(userTweets) == 0 {
 		return c.JSON(http.StatusOK, errNoTweet)
 	}
 	return c.JSON(http.StatusOK, userTweets)
@@ -83,16 +79,15 @@ func createTweet(c echo.Context) error {
 		return c.JSON(http.StatusOK, errNoAuth)
 	}
 	var tweet Tweet
-	err := json.NewDecoder(c.Request().Body).Decode(&tweet)
-	if err == nil {
-		tweet.Time = time.Now()
-		tweet.Author = us.Name + " " + us.Surname
-		return c.JSON(http.StatusOK, db.addTweet(tweet, *us))
+	if err := json.NewDecoder(c.Request().Body).Decode(&tweet); err != nil {
+		return c.JSON(http.StatusBadRequest, errBadReq)
 	}
-	return c.JSON(http.StatusBadRequest, errBadReq)
+	tweet.Time = time.Now()
+	tweet.Author = us.Name + " " + us.Surname
+	return c.JSON(http.StatusOK, *db.addTweet(&tweet, us))
 }
 
-func main() {
+func initHandler() http.Handler {
 	initData()
 	r := echo.New()
 	r.Use(middleware.Logger())
@@ -113,6 +108,10 @@ func main() {
 	r.GET("/main/:id", getTweet)
 	r.POST("/signUp", signUp)
 	r.POST("/signIn", signIn)
+	return r
+}
 
+func main() {
+	r := initHandler()
 	log.Fatal(http.ListenAndServe(":8000", r))
 }

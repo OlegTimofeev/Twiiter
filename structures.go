@@ -26,6 +26,10 @@ type Tweet struct {
 	Text     string    `json:"text"`
 }
 
+type Tok struct {
+	TokenValue string `json:"token"`
+}
+
 type jwtUserClaim struct {
 	ID    string `json:"id"`
 	Login string `json:"login"`
