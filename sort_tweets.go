@@ -1,7 +1,7 @@
 package main
 
-type byTime []Tweet
-type byID []Tweet
+type byTime []*Tweet
+type byID []*Tweet
 
 func (t byTime) Len() int {
 	return len(t)
