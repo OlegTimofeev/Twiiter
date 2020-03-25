@@ -1,10 +1,13 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
+	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+	_ "github.com/lib/pq"
 	"log"
 	"net/http"
 	"time"
@@ -88,6 +91,7 @@ func createTweet(c echo.Context) error {
 }
 
 func initHandler() http.Handler {
+	fmt.Println("Successfully connected!")
 	initData()
 	r := echo.New()
 	r.Use(middleware.Logger())
@@ -112,6 +116,19 @@ func initHandler() http.Handler {
 }
 
 func main() {
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
 	r := initHandler()
 	log.Fatal(http.ListenAndServe(":8000", r))
 }
