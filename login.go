@@ -11,7 +11,7 @@ import (
 
 var mySigningKey = []byte("secret")
 
-func userTokenResponse(c echo.Context, us User) error {
+func userTokenResponse(c echo.Context, us *User) error {
 	claims := &jwtUserClaim{
 		ID:    strconv.Itoa(us.ID),
 		Login: us.Login,
@@ -29,14 +29,18 @@ func signUp(c echo.Context) error {
 	if er != nil {
 		return c.JSON(http.StatusBadRequest, errBadReq)
 	}
-	return userTokenResponse(c, *db.addUser(us))
+	user, err := db.AddUser(us)
+	if err != nil {
+		return userTokenResponse(c, nil)
+	}
+	return userTokenResponse(c, user)
 }
 
 func signIn(c echo.Context) error {
 	var loginUser User
 	json.NewDecoder(c.Request().Body).Decode(&loginUser)
-	if us, isFinded := db.checkLoginPassword(loginUser.Login, loginUser.Password); isFinded {
-		return userTokenResponse(c, *us)
+	if us, isFinded, err := db.CheckLoginPassword(loginUser.Login, loginUser.Password); isFinded && err == nil {
+		return userTokenResponse(c, us)
 	}
 	return c.JSON(http.StatusOK, errNoAuth)
 }

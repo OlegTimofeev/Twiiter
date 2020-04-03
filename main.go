@@ -3,8 +3,6 @@ package main
 import (
 	"encoding/json"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/go-pg/pg"
-	"github.com/go-pg/pg/orm"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"log"
@@ -26,42 +24,18 @@ func initData() {
 	us2 := &User{Login: "wwww", Password: "123", Name: "Da", Surname: "ria"}
 	tweet1 := Tweet{Time: time.Now(), Text: "I love u", Author: "Daria"}
 	tweet2 := Tweet{Time: time.Now(), Text: "I love u 2 Daria", Author: "Oleg"}
-	//db.addTweet(&tweet1, db.addUser(&us2))
-	//db.addTweet(&tweet2, db.addUser(&us1))
-	initDB()
-	db.addTweet(&tweet1, db.addUser(us2))
-	db.addTweet(&tweet2, db.addUser(us1))
-
-}
-
-func initDB() {
-	db.pgdb = connect()
-
-	err := db.pgdb.DropTable((*User)(nil), &orm.DropTableOptions{
-		IfExists: true,
-		Cascade:  true,
-	})
+	//db.AddTweet(&tweet1, db.AddUser(&us2))
+	//db.AddTweet(&tweet2, db.AddUser(&us1))
+	db.InitDB()
+	_, err := db.AddUser(us2)
 	panicIf(err)
-	err = db.pgdb.CreateTable((*User)(nil), &orm.CreateTableOptions{
-		IfNotExists:   false,
-		FKConstraints: true,
-	})
+	_, err = db.AddUser(us1)
+	panicIf(err)
+	_, err = db.AddTweet(&tweet1, us2)
+	panicIf(err)
+	_, err = db.AddTweet(&tweet2, us1)
 	panicIf(err)
 
-	err = db.pgdb.DropTable((*Tweet)(nil), &orm.DropTableOptions{
-		IfExists: true,
-		Cascade:  true,
-	})
-	panicIf(err)
-	err = db.pgdb.CreateTable((*Tweet)(nil), &orm.CreateTableOptions{
-		IfNotExists:   false,
-		FKConstraints: true,
-	})
-	panicIf(err)
-}
-
-func connect() *pg.DB {
-	return pg.Connect(&pgOptions)
 }
 
 func panicIf(err error) {
@@ -71,7 +45,7 @@ func panicIf(err error) {
 }
 
 func deleteTweet(c echo.Context) error {
-	if db.deleteTweet(c.Param("id"), *getUser(c)) {
+	if flag, err := db.DeleteTweet(c.Param("id"), getUser(c)); flag == true && err == nil {
 		return c.JSON(http.StatusOK, ok)
 	}
 
@@ -85,7 +59,7 @@ func updateTweet(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, errBadReq)
 	}
-	if db.updateTweet(c.Param("id"), *us, twt.Text) {
+	if flag, err := db.UpdateTweet(c.Param("id"), us, twt.Text); flag == true && err == nil {
 		return c.JSON(http.StatusOK, ok)
 	}
 	return c.JSON(http.StatusOK, errUnable)
@@ -95,15 +69,23 @@ func getUser(c echo.Context) *User {
 	user := c.Get("user").(*jwt.Token)
 	claims := user.Claims.(*jwtUserClaim)
 	id := claims.ID
-	return db.getUserByID(id)
+	us, err := db.GetUserByID(id)
+	if err != nil {
+		return nil
+	}
+	return us
 }
 
 func getTweets(c echo.Context) error {
-	return c.JSON(http.StatusOK, db.getTweets())
+	tweets, err := db.GetTweets()
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, errNoTweet)
+	}
+	return c.JSON(http.StatusOK, tweets)
 }
 
 func getTweet(c echo.Context) error {
-	if twt := db.getTweet(c.Param("id")); twt == nil {
+	if twt, err := db.GetTweet(c.Param("id")); twt == nil || err != nil {
 		return c.JSON(http.StatusOK, errNoTweet)
 	} else {
 		return c.JSON(http.StatusOK, twt)
@@ -111,8 +93,8 @@ func getTweet(c echo.Context) error {
 }
 
 func getUserTweets(c echo.Context) error {
-	userTweets := db.getUserTweets(c.Param("authorID"))
-	if len(userTweets) == 0 {
+	userTweets, err := db.GetUserTweets(c.Param("authorID"))
+	if len(userTweets) == 0 || err != nil {
 		return c.JSON(http.StatusOK, errNoTweet)
 	}
 	return c.JSON(http.StatusOK, userTweets)
@@ -129,7 +111,11 @@ func createTweet(c echo.Context) error {
 	}
 	tweet.Time = time.Now()
 	tweet.Author = us.Name + " " + us.Surname
-	return c.JSON(http.StatusOK, *db.addTweet(&tweet, us))
+	twt, err := db.AddTweet(&tweet, us)
+	if err != nil {
+		return c.JSON(http.StatusOK, nil)
+	}
+	return c.JSON(http.StatusOK, twt)
 }
 
 func initHandler() http.Handler {

@@ -2,11 +2,12 @@ package main
 
 import (
 	"github.com/stretchr/testify/suite"
+	"strconv"
 	"testing"
 )
 
 func (ts *MapStoreTestSuit) SetupTest() {
-	ts.db = &MapStore{tweets: make(map[string][]*Tweet), userID: 0, tweetID: 0}
+	ts.db = &MapStore{tweets: make(map[int][]*Tweet), userID: 0, tweetID: 0}
 	ts.user1 = User{Login: "www", Password: "123", Name: "Ol", Surname: "eg"}
 	ts.user2 = User{Login: "ufo", Password: "321", Name: "Il", Surname: "ya"}
 	ts.tweet1 = Tweet{Text: "Test"}
@@ -28,8 +29,8 @@ type MapStoreTestSuit struct {
 
 func (ts *MapStoreTestSuit) TestAddUser() {
 
-	createdUser := ts.db.addUser(&ts.user1)
-	us, isExist := ts.db.checkLoginPassword(createdUser.Login, createdUser.Password)
+	createdUser := ts.db.AddUser(&ts.user1)
+	us, isExist := ts.db.CheckLoginPassword(createdUser.Login, createdUser.Password)
 	ts.Require().True(isExist)
 	ts.Require().Equal(us.Login, createdUser.Login)
 	ts.Require().Equal(us.Password, createdUser.Password)
@@ -38,21 +39,21 @@ func (ts *MapStoreTestSuit) TestAddUser() {
 }
 
 func (ts *MapStoreTestSuit) TestAddTweet() {
-	createdUser := ts.db.addUser(&ts.user1)
-	tweet := ts.db.addTweet(&ts.tweet1, createdUser)
-	ts.Require().Equal(*tweet, *ts.db.getTweet(tweet.ID))
+	createdUser := ts.db.AddUser(&ts.user1)
+	tweet := ts.db.AddTweet(&ts.tweet1, createdUser)
+	ts.Require().Equal(*tweet, *ts.db.GetTweet(strconv.Itoa(tweet.ID)))
 }
 
 func (ts *MapStoreTestSuit) TestGetUserTweets() {
-	createdUser1 := ts.db.addUser(&ts.user1)
-	ts.Require().Nil(ts.db.getUserTweets(createdUser1.ID))
-	createdUser2 := ts.db.addUser(&ts.user2)
-	tweet1 := ts.db.addTweet(&ts.tweet1, createdUser1)
-	tweets := ts.db.getUserTweets(createdUser1.ID)
+	createdUser1 := ts.db.AddUser(&ts.user1)
+	ts.Require().Nil(ts.db.GetUserTweets(strconv.Itoa(createdUser1.ID)))
+	createdUser2 := ts.db.AddUser(&ts.user2)
+	tweet1 := ts.db.AddTweet(&ts.tweet1, createdUser1)
+	tweets := ts.db.GetUserTweets(strconv.Itoa(createdUser1.ID))
 	ts.Require().Contains(tweets, tweet1)
-	tweet2 := ts.db.addTweet(&ts.tweet1, createdUser1)
-	tweet3 := ts.db.addTweet(&ts.tweet3, createdUser2)
-	tweets = ts.db.getUserTweets(createdUser1.ID)
+	tweet2 := ts.db.AddTweet(&ts.tweet1, createdUser1)
+	tweet3 := ts.db.AddTweet(&ts.tweet3, createdUser2)
+	tweets = ts.db.GetUserTweets(strconv.Itoa(createdUser1.ID))
 	countOfTweets := 2
 	ts.Require().NotContains(tweets, *tweet3)
 	ts.Require().Contains(tweets, tweet1)
@@ -61,22 +62,22 @@ func (ts *MapStoreTestSuit) TestGetUserTweets() {
 }
 
 func (ts *MapStoreTestSuit) TestUpdateTweet() {
-	createdUser1 := ts.db.addUser(&ts.user1)
-	tweet1 := ts.db.addTweet(&ts.tweet1, createdUser1)
-	isChanged := ts.db.updateTweet(tweet1.ID, createdUser1, ts.newText)
+	createdUser1 := ts.db.AddUser(&ts.user1)
+	tweet1 := ts.db.AddTweet(&ts.tweet1, createdUser1)
+	isChanged := ts.db.UpdateTweet(strconv.Itoa(tweet1.ID), createdUser1, ts.newText)
 	ts.Require().True(isChanged)
-	ts.Require().Equal(ts.newText, ts.db.getTweet(tweet1.ID).Text)
+	ts.Require().Equal(ts.newText, ts.db.GetTweet(strconv.Itoa(tweet1.ID)).Text)
 }
 
 func (ts *MapStoreTestSuit) TestDeleteTweet() {
-	createdUser1 := ts.db.addUser(&ts.user1)
-	tweet1 := ts.db.addTweet(&ts.tweet1, createdUser1)
-	tweets := ts.db.getUserTweets(createdUser1.ID)
+	createdUser1 := ts.db.AddUser(&ts.user1)
+	tweet1 := ts.db.AddTweet(&ts.tweet1, createdUser1)
+	tweets := ts.db.GetUserTweets(strconv.Itoa(createdUser1.ID))
 	countOfTweets := 1
 	ts.Require().Equal(countOfTweets, len(tweets))
-	isDeleted := ts.db.deleteTweet(tweet1.ID, createdUser1)
+	isDeleted := ts.db.DeleteTweet(strconv.Itoa(tweet1.ID), createdUser1)
 	ts.Require().True(isDeleted)
-	tweets = ts.db.getUserTweets(createdUser1.ID)
+	tweets = ts.db.GetUserTweets(strconv.Itoa(createdUser1.ID))
 	countOfTweets = 0
 	ts.Require().Equal(countOfTweets, len(tweets))
 

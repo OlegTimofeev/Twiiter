@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -127,7 +128,7 @@ func (hs *HandlersSuit) TestDeleteTweet() {
 	hs.Require().NoError(err)
 	hs.Require().Equal(hs.testText, tweet.Text)
 	recDelete := httptest.NewRecorder()
-	req3 := httptest.NewRequest(http.MethodDelete, "/tweets/"+tweet.ID, nil)
+	req3 := httptest.NewRequest(http.MethodDelete, "/tweets/"+strconv.Itoa(tweet.ID), nil)
 	req3.Header.Set(echo.HeaderAuthorization, middleware.DefaultJWTConfig.AuthScheme+" "+*tokenUser1)
 	r.ServeHTTP(recDelete, req3)
 	resultDelete := recDelete.Body.Bytes()
@@ -154,7 +155,7 @@ func (hs *HandlersSuit) TestDeleteTweetError() {
 	hs.Require().NoError(err)
 	hs.Require().Equal(hs.testText, tweet.Text)
 	recDelete := httptest.NewRecorder()
-	req3 := httptest.NewRequest(http.MethodDelete, "/tweets/"+tweet.ID, nil)
+	req3 := httptest.NewRequest(http.MethodDelete, "/tweets/"+strconv.Itoa(tweet.ID), nil)
 	req3.Header.Set(echo.HeaderAuthorization, middleware.DefaultJWTConfig.AuthScheme+" "+*tokenUser2)
 	r.ServeHTTP(recDelete, req3)
 	resultDelete := recDelete.Body.Bytes()
@@ -165,7 +166,7 @@ func (hs *HandlersSuit) TestDeleteTweetError() {
 	hs.Require().Equal(errNoTweet.Name, deleted.Name)
 	hs.Require().Equal(errNoTweet.Description, deleted.Description)
 	recDelete = httptest.NewRecorder()
-	req4 := httptest.NewRequest(http.MethodDelete, "/tweets/"+tweet.ID, nil)
+	req4 := httptest.NewRequest(http.MethodDelete, "/tweets/"+strconv.Itoa(tweet.ID), nil)
 	req4.Header.Set(echo.HeaderAuthorization, middleware.DefaultJWTConfig.AuthScheme+" "+*tokenUser1)
 	r.ServeHTTP(recDelete, req4)
 	resultDelete = recDelete.Body.Bytes()
@@ -190,7 +191,7 @@ func (hs *HandlersSuit) TestUpdateTweet() {
 	hs.Require().NoError(err)
 	hs.Require().Equal(hs.testText, tweet.Text)
 	recUpdate := httptest.NewRecorder()
-	req3 := httptest.NewRequest(http.MethodPut, "/tweets/"+tweet.ID, strings.NewReader(`{"text":"update"}`))
+	req3 := httptest.NewRequest(http.MethodPut, "/tweets/"+strconv.Itoa(tweet.ID), strings.NewReader(`{"text":"update"}`))
 	req3.Header.Set(echo.HeaderAuthorization, middleware.DefaultJWTConfig.AuthScheme+" "+*tokenUser1)
 	r.ServeHTTP(recUpdate, req3)
 	resultUpdate := recUpdate.Body.Bytes()
