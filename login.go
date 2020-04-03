@@ -5,6 +5,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -12,7 +13,7 @@ var mySigningKey = []byte("secret")
 
 func userTokenResponse(c echo.Context, us User) error {
 	claims := &jwtUserClaim{
-		ID:    us.ID,
+		ID:    strconv.Itoa(us.ID),
 		Login: us.Login,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),

@@ -1,13 +1,12 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
-	"fmt"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/orm"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
-	_ "github.com/lib/pq"
 	"log"
 	"net/http"
 	"time"
@@ -18,18 +17,61 @@ var errNoTweet = Alert{Name: "No Tweet", Description: "Not find tweet "}
 var errUnable = Alert{Name: "Unable", Description: "Unable to finish operation"}
 var errBadReq = Alert{Name: "Bad Request", Description: "Error.Bad Request"}
 var ok = Alert{Name: "OK", Description: "Operation finished"}
-var db *MapStore
+var db *PostgresDB
 
 func initData() {
-	db = &MapStore{tweets: make(map[string][]*Tweet), userID: 1, tweetID: 1}
-	us1 := User{Login: "www", Password: "123", Name: "Ol", Surname: "eg"}
-	us2 := User{Login: "wwww", Password: "123", Name: "Da", Surname: "ria"}
-	db.addTweet(&Tweet{Time: time.Now(), Text: "I love u", Author: "Daria"}, db.addUser(&us2))
-	db.addTweet(&Tweet{Time: time.Now(), Text: "I love u 2 Daria", Author: "Oleg"}, db.addUser(&us1))
+	db = &PostgresDB{pgdb: nil}
+	/*db = &MapStore{tweets: make(map[string][]*Tweet), userID: 1, tweetID: 1}*/
+	us1 := &User{Login: "www", Password: "123", Name: "Ol", Surname: "eg"}
+	us2 := &User{Login: "wwww", Password: "123", Name: "Da", Surname: "ria"}
+	tweet1 := Tweet{Time: time.Now(), Text: "I love u", Author: "Daria"}
+	tweet2 := Tweet{Time: time.Now(), Text: "I love u 2 Daria", Author: "Oleg"}
+	//db.addTweet(&tweet1, db.addUser(&us2))
+	//db.addTweet(&tweet2, db.addUser(&us1))
+	initDB()
+	db.addTweet(&tweet1, db.addUser(us2))
+	db.addTweet(&tweet2, db.addUser(us1))
+
+}
+
+func initDB() {
+	db.pgdb = connect()
+
+	err := db.pgdb.DropTable((*User)(nil), &orm.DropTableOptions{
+		IfExists: true,
+		Cascade:  true,
+	})
+	panicIf(err)
+	err = db.pgdb.CreateTable((*User)(nil), &orm.CreateTableOptions{
+		IfNotExists:   false,
+		FKConstraints: true,
+	})
+	panicIf(err)
+
+	err = db.pgdb.DropTable((*Tweet)(nil), &orm.DropTableOptions{
+		IfExists: true,
+		Cascade:  true,
+	})
+	panicIf(err)
+	err = db.pgdb.CreateTable((*Tweet)(nil), &orm.CreateTableOptions{
+		IfNotExists:   false,
+		FKConstraints: true,
+	})
+	panicIf(err)
+}
+
+func connect() *pg.DB {
+	return pg.Connect(&pgOptions)
+}
+
+func panicIf(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
 
 func deleteTweet(c echo.Context) error {
-	if db.deleteTweet(c.Param("id"), getUser(c)) {
+	if db.deleteTweet(c.Param("id"), *getUser(c)) {
 		return c.JSON(http.StatusOK, ok)
 	}
 
@@ -43,7 +85,7 @@ func updateTweet(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, errBadReq)
 	}
-	if db.updateTweet(c.Param("id"), us, twt.Text) {
+	if db.updateTweet(c.Param("id"), *us, twt.Text) {
 		return c.JSON(http.StatusOK, ok)
 	}
 	return c.JSON(http.StatusOK, errUnable)
@@ -91,7 +133,6 @@ func createTweet(c echo.Context) error {
 }
 
 func initHandler() http.Handler {
-	fmt.Println("Successfully connected!")
 	initData()
 	r := echo.New()
 	r.Use(middleware.Logger())
@@ -116,19 +157,6 @@ func initHandler() http.Handler {
 }
 
 func main() {
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-		"password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
-	db, err := sql.Open("postgres", psqlInfo)
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-
-	err = db.Ping()
-	if err != nil {
-		panic(err)
-	}
 	r := initHandler()
 	log.Fatal(http.ListenAndServe(":8000", r))
 }

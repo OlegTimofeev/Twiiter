@@ -1,9 +1,13 @@
 package main
 
+import "github.com/go-pg/pg"
+
 const (
-	host     = "127.0.0.1"
+	host     = "db"
 	port     = 5432
 	user     = "admin"
 	password = "password"
 	dbname   = "twitter"
 )
+
+var pgOptions = pg.Options{User: user, Password: password, Database: dbname}

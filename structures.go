@@ -11,18 +11,18 @@ type Alert struct {
 }
 
 type User struct {
-	ID       string `json:"id"`
-	Login    string `json:"login"`
+	ID       int    `json:"id",pg:",unique"`
+	Login    string `json:"login",pg:",unique"`
 	Password string `json:"password"`
 	Name     string `json:"name"`
 	Surname  string `json:"surname"`
 }
 
 type Tweet struct {
-	ID       string    `json:"id"`
+	ID       int       `json:"id"`
 	Time     time.Time `json:"time"`
 	Author   string    `json:"author"`
-	AuthorID string    `json:"authorID"`
+	AuthorID int       `json:"authorID",pg:"fk:user_id"`
 	Text     string    `json:"text"`
 }
 
