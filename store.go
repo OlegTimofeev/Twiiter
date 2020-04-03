@@ -161,7 +161,7 @@ func (dbpg PostgresDB) deleteTweet(tweetID string, user User) bool {
 	if twt == nil {
 		return false
 	}
-	if err := dbpg.pgdb.Delete(&twt); err != nil {
+	if err := dbpg.pgdb.Delete(twt); err != nil {
 		return false
 	}
 	return true
@@ -173,7 +173,7 @@ func (dbpg PostgresDB) updateTweet(tweetID string, user User, text string) bool 
 		return false
 	}
 	twt.Text = text
-	if err := dbpg.pgdb.Update(&twt); err != nil {
+	if err := dbpg.pgdb.Update(twt); err != nil {
 		return false
 	}
 	return true
