@@ -23,6 +23,7 @@ func userTokenResponse(c echo.Context, us *User) error {
 	tokenString, _ := token.SignedString(mySigningKey)
 	return c.JSON(http.StatusOK, echo.Map{"token": tokenString})
 }
+
 func signUp(c echo.Context) error {
 	us := new(User)
 	er := json.NewDecoder(c.Request().Body).Decode(&us)

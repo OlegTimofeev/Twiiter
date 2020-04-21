@@ -1,0 +1,131 @@
+swagger: '2.0'
+info:
+  description: This is a license API in cloud for AxxonNext
+  version: 1.0.0
+  title: Trusted Token API
+  # put the contact info for your development or API team
+  contact:
+    email: ilya.timofeev@ru.axxonsoft.com
+
+basePath: /api/v1
+produces:
+    - application/json
+consumes:
+    - application/json
+paths:
+  /createTweet:
+    get:
+      summary: create tweet
+      description: createTweet
+      tags:
+        - description
+      operationId: createTweet
+      produces:
+        - application/json
+      parameters:
+        - in: "body"
+          name: "tweet"
+          description: "parameters for tweet"
+          required: true
+          schema:
+            $ref: "#/definitions/Tweet"
+      responses:
+        200:
+          description: scheme in json
+          schema:
+            $ref: "#/definitions/Tweet"
+  /tweet/{tweetId}:
+    get:
+      summary: returns tweet
+      description: getTweet
+      tags:
+        - description
+      operationId: getTweetById
+      produces:
+        - application/json
+      parameters:
+        - name: tweetId
+          in: path
+          description: ID of tweet to return
+          required: true
+          type: string
+      responses:
+        200:
+          description: scheme in json
+          schema:
+            $ref: "#/definitions/Tweet"
+  /signUp:
+    post:
+      summary: registration
+      description: register new user
+      tags:
+        - description
+      operationId: signUp
+      produces:
+        - application/json
+      parameters:
+        - in: "body"
+          name: "user"
+          description: "parameters for user"
+          required: true
+          schema:
+            $ref: "#/definitions/User"
+      responses:
+        200:
+          description: scheme in json
+          schema:
+            $ref: "#/definitions/Token"
+  /signIn:
+    post:
+      summary: login
+      description: log in
+      tags:
+        - description
+      operationId: signIn
+      produces:
+        - application/json
+      parameters:
+        - in: "body"
+          name: "user"
+          description: "parameters for user"
+          required: true
+          schema:
+            $ref: "#/definitions/User"
+      responses:
+        200:
+          description: scheme in json
+          schema:
+            $ref: "#/definitions/Token"
+
+definitions:
+  Tweet:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int
+      author:
+        type: string
+      authorId:
+        type: string
+      text:
+        type: string
+  User:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int
+      login:
+         type: string
+      password:
+        type: string
+      name:
+        type: string
+      surname:
+        type: string
+  Token:
+    type: object
+    properties:
+      token:
+        type: string

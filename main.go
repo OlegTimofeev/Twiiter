@@ -3,11 +3,18 @@ package main
 import (
 	"encoding/json"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/go-openapi/loads"
+	"github.com/go-openapi/runtime/middleware"
+	"github.com/jessevdk/go-flags"
 	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
 	"time"
+	"twitter/twitter/restapi"
+	"twitter/twitter/restapi/operations"
+	"twitter/twitter/restapi/operations/description"
 )
 
 var errNoAuth = Alert{Name: "Not Auth", Description: "Auth to create,update or delete twit"}
@@ -121,16 +128,16 @@ func createTweet(c echo.Context) error {
 func initHandler() http.Handler {
 	initData()
 	r := echo.New()
-	r.Use(middleware.Logger())
-	r.Use(middleware.Recover())
+	//r.Use(middleware.Logger())
+	//r.Use(middleware.Recover())
 	e := r.Group("/tweets")
-	config := middleware.JWTConfig{
-		Claims:     &jwtUserClaim{},
-		SigningKey: []byte("secret"),
-	}
-	e.Use(middleware.JWTWithConfig(config))
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
+	//config := middleware.JWTConfig{
+	//	Claims:     &jwtUserClaim{},
+	//	SigningKey: []byte("secret"),
+	//}
+	//e.Use(middleware.JWTWithConfig(config))
+	//e.Use(middleware.Logger())
+	//e.Use(middleware.Recover())
 	e.POST("", createTweet)
 	e.PUT("/:id", updateTweet)
 	e.DELETE("/:id", deleteTweet)
@@ -143,6 +150,65 @@ func initHandler() http.Handler {
 }
 
 func main() {
-	r := initHandler()
-	log.Fatal(http.ListenAndServe(":8000", r))
+	//r := initHandler()
+	//log.Fatal(http.ListenAndServe(":8000", r))
+	initData()
+	swaggerSpec, err := loads.Embedded(restapi.SwaggerJSON, restapi.FlatSwaggerJSON)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	api := operations.NewTrustedTokenAPI(swaggerSpec)
+	server := restapi.NewServer(api)
+
+	api.DescriptionGetTweetByIDHandler = description.GetTweetByIDHandlerFunc(func(params description.GetTweetByIDParams) middleware.Responder {
+		if twt, err := db.GetTweet(params.TweetID); twt == nil || err != nil {
+			return middleware.Error(404, err)
+		} else {
+			return middleware.Error(200, twt)
+		}
+	})
+	api.DescriptionCreateTweetHandler = description.CreateTweetHandlerFunc(func(params description.CreateTweetParams) middleware.Responder {
+		return middleware.NotImplemented("not implemented")
+	})
+	api.DescriptionSignUpHandler = description.SignUpHandlerFunc(func(params description.SignUpParams) middleware.Responder {
+		us := params.User
+		claims := &jwtUserClaim{
+			ID:    strconv.Itoa(int(us.ID)),
+			Login: us.Login,
+			StandardClaims: jwt.StandardClaims{
+				ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
+			},
+		}
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		tokenString, _ := token.SignedString(mySigningKey)
+		return middleware.Error(200, tokenString)
+	})
+	api.DescriptionSignInHandler = description.SignInHandlerFunc(func(params description.SignInParams) middleware.Responder {
+		return middleware.NotImplemented("not implemented")
+	})
+
+	defer server.Shutdown()
+	parser := flags.NewParser(server, flags.Default)
+	parser.ShortDescription = "Trusted Token API"
+	parser.LongDescription = "This is a license API in cloud for AxxonNext"
+	server.ConfigureFlags()
+	for _, optsGroup := range api.CommandLineOptionsGroups {
+		_, err := parser.AddGroup(optsGroup.ShortDescription, optsGroup.LongDescription, optsGroup.Options)
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}
+	if _, err := parser.Parse(); err != nil {
+		code := 1
+		if fe, ok := err.(*flags.Error); ok {
+			if fe.Type == flags.ErrHelp {
+				code = 0
+			}
+		}
+		os.Exit(code)
+	}
+	server.ConfigureAPI()
+	if err := server.Serve(); err != nil {
+		log.Fatalln(err)
+	}
 }
