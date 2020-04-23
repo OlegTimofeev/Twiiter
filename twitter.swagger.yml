@@ -12,10 +12,19 @@ produces:
     - application/json
 consumes:
     - application/json
+
+securityDefinitions:
+  ApiKeyAuth:
+    type: apiKey
+    in: header
+    name: X-API-Key
+
 paths:
   /createTweet:
-    get:
+    post:
       summary: create tweet
+      security:
+        - ApiKeyAuth: []
       description: createTweet
       tags:
         - description
@@ -34,6 +43,26 @@ paths:
           description: scheme in json
           schema:
             $ref: "#/definitions/Tweet"
+  /deleteTweet/{tweetID}:
+    delete:
+      summary: delete tweet
+      security:
+        - ApiKeyAuth: []
+      description: deleteTweet
+      tags:
+        - description
+      operationId: deleteTweet
+      produces:
+        - application/json
+      parameters:
+        - name: tweetID
+          in: path
+          description: ID of tweet to return
+          required: true
+          type: string
+      responses:
+        200:
+          description: scheme in json
   /tweet/{tweetId}:
     get:
       summary: returns tweet

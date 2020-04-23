@@ -1,17 +1,15 @@
 package main
 
 import (
-	"encoding/json"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/labstack/echo"
-	"net/http"
+	"github.com/go-openapi/runtime/middleware"
 	"strconv"
 	"time"
 )
 
 var mySigningKey = []byte("secret")
 
-func userTokenResponse(c echo.Context, us *User) error {
+func userTokenResponse(us *User) middleware.Responder {
 	claims := &jwtUserClaim{
 		ID:    strconv.Itoa(us.ID),
 		Login: us.Login,
@@ -21,27 +19,21 @@ func userTokenResponse(c echo.Context, us *User) error {
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, _ := token.SignedString(mySigningKey)
-	return c.JSON(http.StatusOK, echo.Map{"token": tokenString})
+	return middleware.Error(200, tokenString)
 }
 
-func signUp(c echo.Context) error {
-	us := new(User)
-	er := json.NewDecoder(c.Request().Body).Decode(&us)
-	if er != nil {
-		return c.JSON(http.StatusBadRequest, errBadReq)
-	}
-	user, err := db.AddUser(us)
+func signUp(user *User) middleware.Responder {
+	user, err := db.AddUser(user)
 	if err != nil {
-		return userTokenResponse(c, nil)
+		return userTokenResponse(nil)
 	}
-	return userTokenResponse(c, user)
+	return userTokenResponse(user)
 }
 
-func signIn(c echo.Context) error {
-	var loginUser User
-	json.NewDecoder(c.Request().Body).Decode(&loginUser)
+func signIn(user *User) middleware.Responder {
+	loginUser := user
 	if us, isFinded, err := db.CheckLoginPassword(loginUser.Login, loginUser.Password); isFinded && err == nil {
-		return userTokenResponse(c, us)
+		return userTokenResponse(us)
 	}
-	return c.JSON(http.StatusOK, errNoAuth)
+	return middleware.Error(404, nil)
 }

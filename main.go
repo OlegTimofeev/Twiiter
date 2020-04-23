@@ -12,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"time"
+	"twitter/twitter/models"
 	"twitter/twitter/restapi"
 	"twitter/twitter/restapi/operations"
 	"twitter/twitter/restapi/operations/description"
@@ -51,12 +52,15 @@ func panicIf(err error) {
 	}
 }
 
-func deleteTweet(c echo.Context) error {
-	if flag, err := db.DeleteTweet(c.Param("id"), getUser(c)); flag == true && err == nil {
-		return c.JSON(http.StatusOK, ok)
+func deleteTweet(id string, user *models.User) middleware.Responder {
+	us := new(User)
+	us.ID = int(user.ID)
+	us.Login = user.Login
+	if flag, err := db.DeleteTweet(id, getUserNew(us)); flag == true && err == nil {
+		return middleware.Error(200, ok)
 	}
 
-	return c.JSON(http.StatusOK, errNoTweet)
+	return middleware.Error(404, errNoTweet)
 }
 
 func updateTweet(c echo.Context) error {
@@ -77,6 +81,13 @@ func getUser(c echo.Context) *User {
 	claims := user.Claims.(*jwtUserClaim)
 	id := claims.ID
 	us, err := db.GetUserByID(id)
+	if err != nil {
+		return nil
+	}
+	return us
+}
+func getUserNew(user *User) *User {
+	us, err := db.GetUserByID(strconv.Itoa(user.ID))
 	if err != nil {
 		return nil
 	}
@@ -107,22 +118,21 @@ func getUserTweets(c echo.Context) error {
 	return c.JSON(http.StatusOK, userTweets)
 }
 
-func createTweet(c echo.Context) error {
-	us := getUser(c)
+func createTweet(user *models.User, tweet Tweet) middleware.Responder {
+	us := new(User)
+	us.ID = int(user.ID)
+	us.Login = user.Login
+	us = getUserNew(us)
 	if us == nil {
-		return c.JSON(http.StatusOK, errNoAuth)
-	}
-	var tweet Tweet
-	if err := json.NewDecoder(c.Request().Body).Decode(&tweet); err != nil {
-		return c.JSON(http.StatusBadRequest, errBadReq)
+		return middleware.Error(404, errNoAuth)
 	}
 	tweet.Time = time.Now()
 	tweet.Author = us.Name + " " + us.Surname
 	twt, err := db.AddTweet(&tweet, us)
 	if err != nil {
-		return c.JSON(http.StatusOK, nil)
+		return middleware.Error(400, "Error with DB")
 	}
-	return c.JSON(http.StatusOK, twt)
+	return middleware.Error(200, twt)
 }
 
 func initHandler() http.Handler {
@@ -138,14 +148,12 @@ func initHandler() http.Handler {
 	//e.Use(middleware.JWTWithConfig(config))
 	//e.Use(middleware.Logger())
 	//e.Use(middleware.Recover())
-	e.POST("", createTweet)
+	//e.POST("", createTweet)
 	e.PUT("/:id", updateTweet)
-	e.DELETE("/:id", deleteTweet)
+	//e.DELETE("/:id", deleteTweet)
 	r.GET("/main/author/:authorID", getUserTweets)
 	r.GET("/main", getTweets)
 	r.GET("/main/:id", getTweet)
-	r.POST("/signUp", signUp)
-	r.POST("/signIn", signIn)
 	return r
 }
 
@@ -159,7 +167,18 @@ func main() {
 	}
 	api := operations.NewTrustedTokenAPI(swaggerSpec)
 	server := restapi.NewServer(api)
+	api.APIKeyAuthAuth = func(token string) (interface{}, error) {
+		claims := &jwtUserClaim{}
+		_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+			return mySigningKey, nil
+		})
+		user := new(models.User)
+		id, _ := strconv.Atoi(claims.ID)
+		user.ID = int64(id)
+		user.Login = claims.Login
 
+		return user, err
+	}
 	api.DescriptionGetTweetByIDHandler = description.GetTweetByIDHandlerFunc(func(params description.GetTweetByIDParams) middleware.Responder {
 		if twt, err := db.GetTweet(params.TweetID); twt == nil || err != nil {
 			return middleware.Error(404, err)
@@ -167,24 +186,34 @@ func main() {
 			return middleware.Error(200, twt)
 		}
 	})
-	api.DescriptionCreateTweetHandler = description.CreateTweetHandlerFunc(func(params description.CreateTweetParams) middleware.Responder {
-		return middleware.NotImplemented("not implemented")
+	api.DescriptionCreateTweetHandler = description.CreateTweetHandlerFunc(func(params description.CreateTweetParams, principal interface{}) middleware.Responder {
+		user := principal.(*models.User)
+		modelTweet := params.Tweet
+		var tweet Tweet
+		tweet.Text = modelTweet.Text
+		return createTweet(user, tweet)
 	})
 	api.DescriptionSignUpHandler = description.SignUpHandlerFunc(func(params description.SignUpParams) middleware.Responder {
-		us := params.User
-		claims := &jwtUserClaim{
-			ID:    strconv.Itoa(int(us.ID)),
-			Login: us.Login,
-			StandardClaims: jwt.StandardClaims{
-				ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
-			},
-		}
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-		tokenString, _ := token.SignedString(mySigningKey)
-		return middleware.Error(200, tokenString)
+		user := params.User
+		var newUser User
+		newUser.Login = user.Login
+		newUser.Password = user.Password
+		newUser.Name = user.Name
+		newUser.Surname = user.Surname
+		return signUp(&newUser)
 	})
 	api.DescriptionSignInHandler = description.SignInHandlerFunc(func(params description.SignInParams) middleware.Responder {
-		return middleware.NotImplemented("not implemented")
+		user := params.User
+		var loginUser User
+		loginUser.Login = user.Login
+		loginUser.Password = user.Password
+		loginUser.Name = user.Name
+		loginUser.Surname = user.Surname
+		return signIn(&loginUser)
+	})
+	api.DescriptionDeleteTweetHandler = description.DeleteTweetHandlerFunc(func(params description.DeleteTweetParams, principal interface{}) middleware.Responder {
+		user := principal.(*models.User)
+		return deleteTweet(params.TweetID, user)
 	})
 
 	defer server.Shutdown()
