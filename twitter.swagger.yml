@@ -63,6 +63,32 @@ paths:
       responses:
         200:
           description: scheme in json
+  /updateTweet/{tweetID}:
+    put:
+      summary: update tweet
+      security:
+        - ApiKeyAuth: []
+      description: update tweet
+      tags:
+        - description
+      operationId: updateTweet
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: tweet
+          description: parameters for tweet
+          required: true
+          schema:
+            $ref: "#/definitions/Tweet"
+        - in: path
+          name: tweetID
+          description: ID of tweet to return
+          required: true
+          type: string
+      responses:
+        200:
+          description: scheme in json
   /tweet/{tweetId}:
     get:
       summary: returns tweet

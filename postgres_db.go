@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
 	"strconv"
@@ -72,8 +73,8 @@ func (db *PostgresDB) GetUserByID(userID string) (*User, error) {
 func (db *PostgresDB) DeleteTweet(tweetID string, user *User) (bool, error) {
 	err := db.pgdb.RunInTransaction(func(tx *pg.Tx) error {
 		twt, err := db.GetTweetCheckAuthor(tweetID, user)
-		if twt == nil {
-			return err
+		if twt == nil || err != nil {
+			return errors.New(errUnable.Description)
 		}
 		if err = db.pgdb.Delete(twt); err != nil {
 			return err
@@ -89,8 +90,8 @@ func (db *PostgresDB) DeleteTweet(tweetID string, user *User) (bool, error) {
 func (db *PostgresDB) UpdateTweet(tweetID string, user *User, text string) (bool, error) {
 	err := db.pgdb.RunInTransaction(func(tx *pg.Tx) error {
 		twt, err := db.GetTweetCheckAuthor(tweetID, user)
-		if twt == nil {
-			return err
+		if twt == nil || err != nil {
+			return errors.New(errUnable.Description)
 		}
 		twt.Text = text
 		if err := db.pgdb.Update(twt); err != nil {

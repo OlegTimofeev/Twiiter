@@ -12,6 +12,7 @@ require (
 	github.com/go-openapi/swag v0.19.9
 	github.com/go-openapi/validate v0.19.8
 	github.com/go-pg/pg v8.0.6+incompatible
+	github.com/itimofeev/go-util v0.0.18 // indirect
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/labstack/echo v3.3.10+incompatible

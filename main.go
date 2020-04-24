@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/runtime/middleware"
@@ -63,17 +62,15 @@ func deleteTweet(id string, user *models.User) middleware.Responder {
 	return middleware.Error(404, errNoTweet)
 }
 
-func updateTweet(c echo.Context) error {
-	us := getUser(c)
-	var twt Tweet
-	err := json.NewDecoder(c.Request().Body).Decode(&twt)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, errBadReq)
+func updateTweet(tweetID string, tweet *models.Tweet, user *models.User) middleware.Responder {
+	us := new(User)
+	us.ID = int(user.ID)
+	us.Login = user.Login
+	us = getUserNew(us)
+	if flag, err := db.UpdateTweet(tweetID, us, tweet.Text); flag == true && err == nil {
+		return middleware.Error(200, ok)
 	}
-	if flag, err := db.UpdateTweet(c.Param("id"), us, twt.Text); flag == true && err == nil {
-		return c.JSON(http.StatusOK, ok)
-	}
-	return c.JSON(http.StatusOK, errUnable)
+	return middleware.Error(404, errUnable)
 }
 
 func getUser(c echo.Context) *User {
@@ -140,7 +137,7 @@ func initHandler() http.Handler {
 	r := echo.New()
 	//r.Use(middleware.Logger())
 	//r.Use(middleware.Recover())
-	e := r.Group("/tweets")
+	//e := r.Group("/tweets")
 	//config := middleware.JWTConfig{
 	//	Claims:     &jwtUserClaim{},
 	//	SigningKey: []byte("secret"),
@@ -149,12 +146,22 @@ func initHandler() http.Handler {
 	//e.Use(middleware.Logger())
 	//e.Use(middleware.Recover())
 	//e.POST("", createTweet)
-	e.PUT("/:id", updateTweet)
+	//e.PUT("/:id", updateTweet)
 	//e.DELETE("/:id", deleteTweet)
 	r.GET("/main/author/:authorID", getUserTweets)
 	r.GET("/main", getTweets)
 	r.GET("/main/:id", getTweet)
 	return r
+}
+
+var loginFunc = func(params description.SignInParams) middleware.Responder {
+	user := params.User
+	var loginUser User
+	loginUser.Login = user.Login
+	loginUser.Password = user.Password
+	loginUser.Name = user.Name
+	loginUser.Surname = user.Surname
+	return signIn(&loginUser)
 }
 
 func main() {
@@ -167,11 +174,16 @@ func main() {
 	}
 	api := operations.NewTrustedTokenAPI(swaggerSpec)
 	server := restapi.NewServer(api)
+	server.Port = 8080
+
 	api.APIKeyAuthAuth = func(token string) (interface{}, error) {
 		claims := &jwtUserClaim{}
 		_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
 			return mySigningKey, nil
 		})
+		if err != nil {
+			return nil, err
+		}
 		user := new(models.User)
 		id, _ := strconv.Atoi(claims.ID)
 		user.ID = int64(id)
@@ -185,6 +197,10 @@ func main() {
 		} else {
 			return middleware.Error(200, twt)
 		}
+	})
+	api.DescriptionUpdateTweetHandler = description.UpdateTweetHandlerFunc(func(params description.UpdateTweetParams, principal interface{}) middleware.Responder {
+		user := principal.(*models.User)
+		return updateTweet(params.TweetID, params.Tweet, user)
 	})
 	api.DescriptionCreateTweetHandler = description.CreateTweetHandlerFunc(func(params description.CreateTweetParams, principal interface{}) middleware.Responder {
 		user := principal.(*models.User)
@@ -202,15 +218,8 @@ func main() {
 		newUser.Surname = user.Surname
 		return signUp(&newUser)
 	})
-	api.DescriptionSignInHandler = description.SignInHandlerFunc(func(params description.SignInParams) middleware.Responder {
-		user := params.User
-		var loginUser User
-		loginUser.Login = user.Login
-		loginUser.Password = user.Password
-		loginUser.Name = user.Name
-		loginUser.Surname = user.Surname
-		return signIn(&loginUser)
-	})
+
+	api.DescriptionSignInHandler = description.SignInHandlerFunc(loginFunc)
 	api.DescriptionDeleteTweetHandler = description.DeleteTweetHandlerFunc(func(params description.DeleteTweetParams, principal interface{}) middleware.Responder {
 		user := principal.(*models.User)
 		return deleteTweet(params.TweetID, user)
