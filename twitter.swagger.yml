@@ -17,7 +17,7 @@ securityDefinitions:
   ApiKeyAuth:
     type: apiKey
     in: header
-    name: X-API-Key
+    name: Authorization
 
 paths:
   /createTweet:
@@ -32,7 +32,7 @@ paths:
       produces:
         - application/json
       parameters:
-        - in: "body"
+        - in: body
           name: "tweet"
           description: "parameters for tweet"
           required: true
@@ -119,7 +119,7 @@ paths:
       produces:
         - application/json
       parameters:
-        - in: "body"
+        - in: body
           name: "user"
           description: "parameters for user"
           required: true
@@ -140,12 +140,17 @@ paths:
       produces:
         - application/json
       parameters:
-        - in: "body"
+        - in: body
           name: "user"
           description: "parameters for user"
           required: true
           schema:
-            $ref: "#/definitions/User"
+            type: object
+            properties:
+              login:
+                type: string
+              password:
+                type: string
       responses:
         200:
           description: scheme in json

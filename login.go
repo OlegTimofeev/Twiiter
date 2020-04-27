@@ -5,6 +5,7 @@ import (
 	"github.com/go-openapi/runtime/middleware"
 	"strconv"
 	"time"
+	"twitter/twitter/models"
 )
 
 var mySigningKey = []byte("secret")
@@ -19,7 +20,10 @@ func userTokenResponse(us *User) middleware.Responder {
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, _ := token.SignedString(mySigningKey)
-	return middleware.Error(200, tokenString)
+	tkn := models.Token{
+		Token: tokenString,
+	}
+	return middleware.Error(200, tkn)
 }
 
 func signUp(user *User) middleware.Responder {

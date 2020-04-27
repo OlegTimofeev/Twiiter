@@ -4,11 +4,9 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/runtime/middleware"
-	"github.com/jessevdk/go-flags"
 	"github.com/labstack/echo"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 	"twitter/twitter/models"
@@ -159,14 +157,10 @@ var loginFunc = func(params description.SignInParams) middleware.Responder {
 	var loginUser User
 	loginUser.Login = user.Login
 	loginUser.Password = user.Password
-	loginUser.Name = user.Name
-	loginUser.Surname = user.Surname
 	return signIn(&loginUser)
 }
 
-func main() {
-	//r := initHandler()
-	//log.Fatal(http.ListenAndServe(":8000", r))
+func initSWHandler() *restapi.Server {
 	initData()
 	swaggerSpec, err := loads.Embedded(restapi.SwaggerJSON, restapi.FlatSwaggerJSON)
 	if err != nil {
@@ -224,13 +218,9 @@ func main() {
 		user := principal.(*models.User)
 		return deleteTweet(params.TweetID, user)
 	})
-
-	defer server.Shutdown()
-	parser := flags.NewParser(server, flags.Default)
-	parser.ShortDescription = "Trusted Token API"
-	parser.LongDescription = "This is a license API in cloud for AxxonNext"
+	//parser := flags.NewParser(server, flags.Default)
 	server.ConfigureFlags()
-	for _, optsGroup := range api.CommandLineOptionsGroups {
+	/*for _, optsGroup := range api.CommandLineOptionsGroups {
 		_, err := parser.AddGroup(optsGroup.ShortDescription, optsGroup.LongDescription, optsGroup.Options)
 		if err != nil {
 			log.Fatalln(err)
@@ -244,8 +234,16 @@ func main() {
 			}
 		}
 		os.Exit(code)
-	}
+	}*/
 	server.ConfigureAPI()
+	return server
+}
+
+func main() {
+	//r := initHandler()
+	//log.Fatal(http.ListenAndServe(":8000", r))
+	server := initSWHandler()
+	defer server.Shutdown()
 	if err := server.Serve(); err != nil {
 		log.Fatalln(err)
 	}

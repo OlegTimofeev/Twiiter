@@ -14,7 +14,7 @@ run-docker:
 
 SWAGGER_IMAGE=quay.io/goswagger/swagger:v0.23.0
 
-gen-trusted-client-server:
+gen-twitter:
 	docker run --rm -v `pwd`:/go/ -w /go/ -t $(SWAGGER_IMAGE) \
 	generate server \
 	--target=twitter \

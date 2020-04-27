@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	client2 "github.com/go-openapi/runtime/client"
+	util2 "github.com/itimofeev/go-util"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/stretchr/testify/suite"
@@ -11,6 +13,9 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"twitter/twitter/client"
+	"twitter/twitter/client/description"
+	"twitter/twitter/models"
 )
 
 func (hs *HandlersSuit) SetupTest() {
@@ -26,6 +31,13 @@ type HandlersSuit struct {
 	testReaderSignUpUser io.Reader
 	testReaderTweet      io.Reader
 	suite.Suite
+}
+
+func initClient() *client.TrustedToken {
+	httpClient := &http.Client{Transport: util2.NewTransport(initSWHandler().GetHandler())}
+	c := client2.NewWithClient(client.DefaultHost, client.DefaultBasePath, client.DefaultSchemes, httpClient)
+	deviceRegistry := client.New(c, nil)
+	return deviceRegistry
 }
 
 func userTokenResponseTest(r http.Handler, reader io.Reader, inOrUp string) (error, *string) {
@@ -47,13 +59,26 @@ func userTokenResponseTest(r http.Handler, reader io.Reader, inOrUp string) (err
 }
 
 func (hs *HandlersSuit) TestUserTokenResponse() {
-	r := initHandler()
-	err, token := userTokenResponseTest(r, hs.testReaderSignUpUser, "up")
+	deviceRegistry := initClient()
+	signinOK, err := deviceRegistry.Description.SignIn(description.NewSignInParams().WithUser(description.SignInBody{
+		Login:    "www",
+		Password: "123",
+	}))
 	hs.Require().NoError(err)
-	hs.Require().NotNil(token)
-	err, token = userTokenResponseTest(r, hs.testReaderSignInUser, "in")
+	token := signinOK.Payload.Token
+	createTweetOk, err := deviceRegistry.Description.CreateTweet(description.NewCreateTweetParams().WithTweet(&models.Tweet{
+		Text: "12333333333",
+	}), client2.BearerToken(token))
 	hs.Require().NoError(err)
-	hs.Require().NotNil(token)
+	hs.Require().NotNil(createTweetOk)
+
+	/*	r := initHandler()
+		err, token := userTokenResponseTest(r, hs.testReaderSignUpUser, "up")
+		hs.Require().NoError(err)
+		hs.Require().NotNil(token)
+		err, token = userTokenResponseTest(r, hs.testReaderSignInUser, "in")
+		hs.Require().NoError(err)
+		hs.Require().NotNil(token)*/
 }
 
 func (hs *HandlersSuit) TestSignUpAndCreateTweet() {
