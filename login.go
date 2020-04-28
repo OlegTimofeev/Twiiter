@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 	"twitter/twitter/models"
+	"twitter/twitter/restapi/operations/description"
 )
 
 var mySigningKey = []byte("secret")
@@ -26,16 +27,24 @@ func userTokenResponse(us *User) middleware.Responder {
 	return middleware.Error(200, tkn)
 }
 
-func signUp(user *User) middleware.Responder {
-	user, err := db.AddUser(user)
+func signUp(params description.SignUpParams) middleware.Responder {
+	newUser := new(User)
+	newUser.Login = params.User.Login
+	newUser.Password = params.User.Password
+	newUser.Name = params.User.Name
+	newUser.Surname = params.User.Surname
+	newUser, err := db.AddUser(newUser)
 	if err != nil {
 		return userTokenResponse(nil)
 	}
-	return userTokenResponse(user)
+	return userTokenResponse(newUser)
 }
 
-func signIn(user *User) middleware.Responder {
-	loginUser := user
+func signIn(params description.SignInParams) middleware.Responder {
+	user := params.User
+	var loginUser User
+	loginUser.Login = user.Login
+	loginUser.Password = user.Password
 	if us, isFinded, err := db.CheckLoginPassword(loginUser.Login, loginUser.Password); isFinded && err == nil {
 		return userTokenResponse(us)
 	}

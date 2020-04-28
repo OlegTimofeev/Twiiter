@@ -109,6 +109,29 @@ paths:
           description: scheme in json
           schema:
             $ref: "#/definitions/Tweet"
+  /tweet/author/{authorId}:
+    get:
+      summary: returns author's tweets
+      description: getTweetAuthorTweets
+      tags:
+        - description
+      operationId: getAuthorsTweetsById
+      produces:
+        - application/json
+      parameters:
+        - name: authorId
+          in: path
+          description: autor ID to return owner tweets
+          required: true
+          type: string
+      responses:
+        200:
+          description: scheme in json
+          schema:
+            type: array
+            items: {
+              $ref: "#/definitions/Tweet"
+            }
   /signUp:
     post:
       summary: registration
@@ -124,7 +147,16 @@ paths:
           description: "parameters for user"
           required: true
           schema:
-            $ref: "#/definitions/User"
+            type: object
+            properties:
+              login:
+                type: string
+              password:
+                type: string
+              Name:
+                type: string
+              Surname:
+                  type: string
       responses:
         200:
           description: scheme in json
@@ -167,7 +199,8 @@ definitions:
       author:
         type: string
       authorId:
-        type: string
+        type: integer
+        format: int
       text:
         type: string
   User:
