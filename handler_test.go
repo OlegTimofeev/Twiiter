@@ -16,9 +16,15 @@ func (hs *HandlersSuit) SetupTest() {
 	httpClient := &http.Client{Transport: util2.NewTransport(initSWHandler().GetHandler())}
 	c := client2.NewWithClient(client.DefaultHost, client.DefaultBasePath, client.DefaultSchemes, httpClient)
 	hs.deviceRegistry = client.New(c, nil)
+	//from initialization
+	hs.password = "123"
+	hs.login = "login"
 }
 
 type HandlersSuit struct {
+	login          string
+	password       string
+	text           string
 	deviceRegistry *client.TrustedToken
 	suite.Suite
 }
@@ -41,8 +47,8 @@ func (hs *HandlersSuit) TestSignUpAndCreateTweet() {
 
 func (hs *HandlersSuit) TestSignInAndCreateTweet() {
 	signinOK, err := hs.deviceRegistry.Description.SignIn(description.NewSignInParams().WithUser(description.SignInBody{
-		Login:    "www",
-		Password: "123",
+		Login:    hs.login,
+		Password: hs.password,
 	}))
 	hs.Require().NoError(err)
 	token := signinOK.Payload.Token
@@ -122,8 +128,8 @@ func (hs *HandlersSuit) TestDeleteTweetError() {
 	hs.Require().NotNil(userTweets)
 	hs.Require().Equal(countOfCreatedTweets, len(userTweets.Payload))
 	signinOK, err := hs.deviceRegistry.Description.SignIn(description.NewSignInParams().WithUser(description.SignInBody{
-		Login:    "www",
-		Password: "123",
+		Login:    hs.login,
+		Password: hs.password,
 	}))
 	hs.Require().NoError(err)
 	token = signinOK.Payload.Token
@@ -152,12 +158,12 @@ func (hs *HandlersSuit) TestUpdateTweet() {
 	hs.Require().NotNil(userTweets)
 	hs.Require().Equal(countOfCreatedTweets, len(userTweets.Payload))
 	_, err = hs.deviceRegistry.Description.UpdateTweet(description.NewUpdateTweetParams().WithTweetID(strconv.Itoa(int(createTweetOk.Payload.ID))).WithTweet(&models.Tweet{
-		Text: "123",
+		Text: hs.text,
 	}), client2.APIKeyAuth("Authorization", "header", token))
 	hs.NoError(err)
 	updatedTweet, err := hs.deviceRegistry.Description.GetTweetByID(description.NewGetTweetByIDParams().WithTweetID(strconv.Itoa(int(createTweetOk.Payload.ID))))
 	hs.Require().NoError(err)
-	hs.Require().Equal("123", updatedTweet.Payload.Text)
+	hs.Require().Equal(hs.text, updatedTweet.Payload.Text)
 
 }
 

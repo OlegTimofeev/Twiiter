@@ -21,10 +21,10 @@ var db *PostgresDB
 
 func initData() {
 	db = &PostgresDB{pgdb: nil}
-	us1 := &User{Login: "www", Password: "123", Name: "Ol", Surname: "eg"}
-	us2 := &User{Login: "wwww", Password: "123", Name: "Da", Surname: "ria"}
-	tweet1 := Tweet{Time: time.Now(), Text: "I love u", Author: "Da ria"}
-	tweet2 := Tweet{Time: time.Now(), Text: "I love u 2 Daria", Author: "Ol eg"}
+	us1 := &User{Login: "log", Password: "123", Name: "Ol", Surname: "eg"}
+	us2 := &User{Login: "login", Password: "123", Name: "Da", Surname: "ria"}
+	tweet1 := Tweet{Time: time.Now(), Text: "text", Author: "Da ria"}
+	tweet2 := Tweet{Time: time.Now(), Text: "text", Author: "Ol eg"}
 	err := db.InitDB()
 	panicIf(err)
 	_, err = db.AddUser(us2)
