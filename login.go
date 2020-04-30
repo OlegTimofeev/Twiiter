@@ -1,18 +1,19 @@
 package main
 
 import (
-	"encoding/json"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/labstack/echo"
-	"net/http"
+	"github.com/go-openapi/runtime/middleware"
+	"strconv"
 	"time"
+	"twitter/twitter/models"
+	"twitter/twitter/restapi/operations/description"
 )
 
 var mySigningKey = []byte("secret")
 
-func userTokenResponse(c echo.Context, us User) error {
+func userTokenResponse(us *User) *models.Token {
 	claims := &jwtUserClaim{
-		ID:    us.ID,
+		ID:    strconv.Itoa(us.ID),
 		Login: us.Login,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
@@ -20,22 +21,32 @@ func userTokenResponse(c echo.Context, us User) error {
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, _ := token.SignedString(mySigningKey)
-	return c.JSON(http.StatusOK, echo.Map{"token": tokenString})
-}
-func signUp(c echo.Context) error {
-	us := new(User)
-	er := json.NewDecoder(c.Request().Body).Decode(&us)
-	if er != nil {
-		return c.JSON(http.StatusBadRequest, errBadReq)
+	tkn := models.Token{
+		Token: tokenString,
 	}
-	return userTokenResponse(c, *db.addUser(us))
+	return &tkn
 }
 
-func signIn(c echo.Context) error {
-	var loginUser User
-	json.NewDecoder(c.Request().Body).Decode(&loginUser)
-	if us, isFinded := db.checkLoginPassword(loginUser.Login, loginUser.Password); isFinded {
-		return userTokenResponse(c, *us)
+func signUp(params description.SignUpParams) middleware.Responder {
+	newUser := new(User)
+	newUser.Login = params.User.Login
+	newUser.Password = params.User.Password
+	newUser.Name = params.User.Name
+	newUser.Surname = params.User.Surname
+	newUser, err := db.AddUser(newUser)
+	if err != nil {
+		return middleware.Error(400, "Error with DB")
 	}
-	return c.JSON(http.StatusOK, errNoAuth)
+	return description.NewSignUpOK().WithPayload(userTokenResponse(newUser))
+}
+
+func signIn(params description.SignInParams) middleware.Responder {
+	user := params.User
+	var loginUser User
+	loginUser.Login = user.Login
+	loginUser.Password = user.Password
+	if us, isFinded, err := db.CheckLoginPassword(loginUser.Login, loginUser.Password); isFinded && err == nil {
+		return description.NewSignInOK().WithPayload(userTokenResponse(us))
+	}
+	return middleware.Error(404, "Error with DB")
 }
