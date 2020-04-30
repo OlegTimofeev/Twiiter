@@ -17,7 +17,7 @@ func getUserTweets(params description.GetAuthorsTweetsByIDParams) middleware.Res
 	if len(userTweets) == 0 || err != nil {
 		return middleware.Error(404, errNoTweet)
 	}
-	return middleware.Error(200, userTweets)
+	return description.NewGetAuthorsTweetsByIDOK().WithPayload(tweetArrayToModel(userTweets))
 }
 
 func createTweet(params description.CreateTweetParams, principal interface{}) middleware.Responder {
@@ -38,7 +38,7 @@ func createTweet(params description.CreateTweetParams, principal interface{}) mi
 	if err != nil {
 		return middleware.Error(400, "Error with DB")
 	}
-	return middleware.Error(200, twt)
+	return description.NewCreateTweetOK().WithPayload(twt.toModel())
 }
 
 func getUser(user *User) *User {
@@ -53,7 +53,7 @@ func deleteTweet(id string, user *models.User) middleware.Responder {
 	us.ID = int(user.ID)
 	us.Login = user.Login
 	if flag, err := db.DeleteTweet(id, getUser(us)); flag == true && err == nil {
-		return middleware.Error(200, ok)
+		return description.NewDeleteTweetOK()
 	}
 
 	return middleware.Error(404, errNoTweet)
@@ -66,7 +66,7 @@ func updateTweet(params description.UpdateTweetParams, principal interface{}) mi
 	us.Login = user.Login
 	us = getUser(us)
 	if flag, err := db.UpdateTweet(params.TweetID, us, params.Tweet.Text); flag == true && err == nil {
-		return middleware.Error(200, ok)
+		return description.NewUpdateTweetOK()
 	}
 	return middleware.Error(404, errUnable)
 }
@@ -75,6 +75,6 @@ func getTweet(params description.GetTweetByIDParams) middleware.Responder {
 	if twt, err := db.GetTweet(params.TweetID); twt == nil || err != nil {
 		return middleware.Error(404, err)
 	} else {
-		return middleware.Error(200, twt)
+		return description.NewGetTweetByIDOK().WithPayload(twt.toModel())
 	}
 }

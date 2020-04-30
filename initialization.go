@@ -50,7 +50,7 @@ func initSWHandler() *restapi.Server {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	api := operations.NewTrustedTokenAPI(swaggerSpec)
+	api := operations.NewTwitterAPI(swaggerSpec)
 	server := restapi.NewServer(api)
 	server.Port = 8080
 

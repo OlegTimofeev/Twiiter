@@ -11,7 +11,7 @@ import (
 
 var mySigningKey = []byte("secret")
 
-func userTokenResponse(us *User) middleware.Responder {
+func userTokenResponse(us *User) *models.Token {
 	claims := &jwtUserClaim{
 		ID:    strconv.Itoa(us.ID),
 		Login: us.Login,
@@ -24,7 +24,7 @@ func userTokenResponse(us *User) middleware.Responder {
 	tkn := models.Token{
 		Token: tokenString,
 	}
-	return middleware.Error(200, tkn)
+	return &tkn
 }
 
 func signUp(params description.SignUpParams) middleware.Responder {
@@ -35,9 +35,9 @@ func signUp(params description.SignUpParams) middleware.Responder {
 	newUser.Surname = params.User.Surname
 	newUser, err := db.AddUser(newUser)
 	if err != nil {
-		return userTokenResponse(nil)
+		return middleware.Error(400, "Error with DB")
 	}
-	return userTokenResponse(newUser)
+	return description.NewSignUpOK().WithPayload(userTokenResponse(newUser))
 }
 
 func signIn(params description.SignInParams) middleware.Responder {
@@ -46,7 +46,7 @@ func signIn(params description.SignInParams) middleware.Responder {
 	loginUser.Login = user.Login
 	loginUser.Password = user.Password
 	if us, isFinded, err := db.CheckLoginPassword(loginUser.Login, loginUser.Password); isFinded && err == nil {
-		return userTokenResponse(us)
+		return description.NewSignInOK().WithPayload(userTokenResponse(us))
 	}
-	return middleware.Error(404, nil)
+	return middleware.Error(404, "Error with DB")
 }

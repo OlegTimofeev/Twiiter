@@ -15,22 +15,22 @@ import (
 func (hs *HandlersSuit) SetupTest() {
 	httpClient := &http.Client{Transport: util2.NewTransport(initSWHandler().GetHandler())}
 	c := client2.NewWithClient(client.DefaultHost, client.DefaultBasePath, client.DefaultSchemes, httpClient)
-	hs.deviceRegistry = client.New(c, nil)
+	hs.twitterClient = client.New(c, nil)
 	//from initialization
 	hs.password = "123"
 	hs.login = "login"
 }
 
 type HandlersSuit struct {
-	login          string
-	password       string
-	text           string
-	deviceRegistry *client.TrustedToken
+	login         string
+	password      string
+	text          string
+	twitterClient *client.Twitter
 	suite.Suite
 }
 
 func (hs *HandlersSuit) TestSignUpAndCreateTweet() {
-	signupOK, err := hs.deviceRegistry.Description.SignUp(description.NewSignUpParams().WithUser(description.SignUpBody{
+	signupOK, err := hs.twitterClient.Description.SignUp(description.NewSignUpParams().WithUser(description.SignUpBody{
 		Login:    "llw",
 		Password: "123",
 		Name:     "Ole",
@@ -38,7 +38,7 @@ func (hs *HandlersSuit) TestSignUpAndCreateTweet() {
 	}))
 	hs.Require().NoError(err)
 	token := signupOK.Payload.Token
-	createTweetOk, err := hs.deviceRegistry.Description.CreateTweet(description.NewCreateTweetParams().WithTweet(&models.Tweet{
+	createTweetOk, err := hs.twitterClient.Description.CreateTweet(description.NewCreateTweetParams().WithTweet(&models.Tweet{
 		Text: "12333333333",
 	}), client2.APIKeyAuth("Authorization", "header", token))
 	hs.Require().NoError(err)
@@ -46,13 +46,13 @@ func (hs *HandlersSuit) TestSignUpAndCreateTweet() {
 }
 
 func (hs *HandlersSuit) TestSignInAndCreateTweet() {
-	signinOK, err := hs.deviceRegistry.Description.SignIn(description.NewSignInParams().WithUser(description.SignInBody{
+	signinOK, err := hs.twitterClient.Description.SignIn(description.NewSignInParams().WithUser(description.SignInBody{
 		Login:    hs.login,
 		Password: hs.password,
 	}))
 	hs.Require().NoError(err)
 	token := signinOK.Payload.Token
-	createTweetOk, err := hs.deviceRegistry.Description.CreateTweet(description.NewCreateTweetParams().WithTweet(&models.Tweet{
+	createTweetOk, err := hs.twitterClient.Description.CreateTweet(description.NewCreateTweetParams().WithTweet(&models.Tweet{
 		Text: "12333333333",
 	}), client2.APIKeyAuth("Authorization", "header", token))
 	hs.Require().NoError(err)
@@ -60,7 +60,7 @@ func (hs *HandlersSuit) TestSignInAndCreateTweet() {
 }
 
 func (hs *HandlersSuit) TestGetUserTweets() {
-	signupOK, err := hs.deviceRegistry.Description.SignUp(description.NewSignUpParams().WithUser(description.SignUpBody{
+	signupOK, err := hs.twitterClient.Description.SignUp(description.NewSignUpParams().WithUser(description.SignUpBody{
 		Login:    "llw",
 		Password: "123",
 		Name:     "Ole",
@@ -68,17 +68,17 @@ func (hs *HandlersSuit) TestGetUserTweets() {
 	}))
 	hs.Require().NoError(err)
 	token := signupOK.Payload.Token
-	createTweetOk, err := hs.deviceRegistry.Description.CreateTweet(description.NewCreateTweetParams().WithTweet(&models.Tweet{
+	createTweetOk, err := hs.twitterClient.Description.CreateTweet(description.NewCreateTweetParams().WithTweet(&models.Tweet{
 		Text: "first tweet",
 	}), client2.APIKeyAuth("Authorization", "header", token))
 	hs.Require().NoError(err)
 	hs.Require().NotNil(createTweetOk)
-	createTweetOk, err = hs.deviceRegistry.Description.CreateTweet(description.NewCreateTweetParams().WithTweet(&models.Tweet{
+	createTweetOk, err = hs.twitterClient.Description.CreateTweet(description.NewCreateTweetParams().WithTweet(&models.Tweet{
 		Text: "second tweet",
 	}), client2.APIKeyAuth("Authorization", "header", token))
 	hs.Require().NoError(err)
 	hs.Require().NotNil(createTweetOk)
-	userTweets, err := hs.deviceRegistry.Description.GetAuthorsTweetsByID(description.NewGetAuthorsTweetsByIDParams().WithAuthorID(strconv.Itoa(int(createTweetOk.Payload.AuthorID))))
+	userTweets, err := hs.twitterClient.Description.GetAuthorsTweetsByID(description.NewGetAuthorsTweetsByIDParams().WithAuthorID(strconv.Itoa(int(createTweetOk.Payload.AuthorID))))
 	hs.Require().NoError(err)
 	countOfCreatedTweets := 2
 	hs.Require().NotNil(userTweets)
@@ -86,7 +86,7 @@ func (hs *HandlersSuit) TestGetUserTweets() {
 }
 
 func (hs *HandlersSuit) TestDeleteTweet() {
-	signupOK, err := hs.deviceRegistry.Description.SignUp(description.NewSignUpParams().WithUser(description.SignUpBody{
+	signupOK, err := hs.twitterClient.Description.SignUp(description.NewSignUpParams().WithUser(description.SignUpBody{
 		Login:    "llw",
 		Password: "123",
 		Name:     "Ole",
@@ -94,22 +94,22 @@ func (hs *HandlersSuit) TestDeleteTweet() {
 	}))
 	hs.Require().NoError(err)
 	token := signupOK.Payload.Token
-	createTweetOk, err := hs.deviceRegistry.Description.CreateTweet(description.NewCreateTweetParams().WithTweet(&models.Tweet{
+	createTweetOk, err := hs.twitterClient.Description.CreateTweet(description.NewCreateTweetParams().WithTweet(&models.Tweet{
 		Text: "first tweet",
 	}), client2.APIKeyAuth("Authorization", "header", token))
 	hs.Require().NoError(err)
 	hs.Require().NotNil(createTweetOk)
-	userTweets, err := hs.deviceRegistry.Description.GetAuthorsTweetsByID(description.NewGetAuthorsTweetsByIDParams().WithAuthorID(strconv.Itoa(int(createTweetOk.Payload.AuthorID))))
+	userTweets, err := hs.twitterClient.Description.GetAuthorsTweetsByID(description.NewGetAuthorsTweetsByIDParams().WithAuthorID(strconv.Itoa(int(createTweetOk.Payload.AuthorID))))
 	hs.Require().NoError(err)
 	countOfCreatedTweets := 1
 	hs.Require().NotNil(userTweets)
 	hs.Require().Equal(countOfCreatedTweets, len(userTweets.Payload))
-	_, err = hs.deviceRegistry.Description.DeleteTweet(description.NewDeleteTweetParams().WithTweetID(strconv.Itoa(int(createTweetOk.Payload.ID))), client2.APIKeyAuth("Authorization", "header", token))
+	_, err = hs.twitterClient.Description.DeleteTweet(description.NewDeleteTweetParams().WithTweetID(strconv.Itoa(int(createTweetOk.Payload.ID))), client2.APIKeyAuth("Authorization", "header", token))
 	hs.Require().NoError(err)
 }
 
 func (hs *HandlersSuit) TestDeleteTweetError() {
-	signupOK, err := hs.deviceRegistry.Description.SignUp(description.NewSignUpParams().WithUser(description.SignUpBody{
+	signupOK, err := hs.twitterClient.Description.SignUp(description.NewSignUpParams().WithUser(description.SignUpBody{
 		Login:    "llw",
 		Password: "123",
 		Name:     "Ole",
@@ -117,29 +117,29 @@ func (hs *HandlersSuit) TestDeleteTweetError() {
 	}))
 	hs.Require().NoError(err)
 	token := signupOK.Payload.Token
-	createTweetOk, err := hs.deviceRegistry.Description.CreateTweet(description.NewCreateTweetParams().WithTweet(&models.Tweet{
+	createTweetOk, err := hs.twitterClient.Description.CreateTweet(description.NewCreateTweetParams().WithTweet(&models.Tweet{
 		Text: "first tweet",
 	}), client2.APIKeyAuth("Authorization", "header", token))
 	hs.Require().NoError(err)
 	hs.Require().NotNil(createTweetOk)
-	userTweets, err := hs.deviceRegistry.Description.GetAuthorsTweetsByID(description.NewGetAuthorsTweetsByIDParams().WithAuthorID(strconv.Itoa(int(createTweetOk.Payload.AuthorID))))
+	userTweets, err := hs.twitterClient.Description.GetAuthorsTweetsByID(description.NewGetAuthorsTweetsByIDParams().WithAuthorID(strconv.Itoa(int(createTweetOk.Payload.AuthorID))))
 	hs.Require().NoError(err)
 	countOfCreatedTweets := 1
 	hs.Require().NotNil(userTweets)
 	hs.Require().Equal(countOfCreatedTweets, len(userTweets.Payload))
-	signinOK, err := hs.deviceRegistry.Description.SignIn(description.NewSignInParams().WithUser(description.SignInBody{
+	signinOK, err := hs.twitterClient.Description.SignIn(description.NewSignInParams().WithUser(description.SignInBody{
 		Login:    hs.login,
 		Password: hs.password,
 	}))
 	hs.Require().NoError(err)
 	token = signinOK.Payload.Token
-	_, err = hs.deviceRegistry.Description.DeleteTweet(description.NewDeleteTweetParams().WithTweetID(strconv.Itoa(int(createTweetOk.Payload.ID))), client2.APIKeyAuth("Authorization", "header", token))
+	_, err = hs.twitterClient.Description.DeleteTweet(description.NewDeleteTweetParams().WithTweetID(strconv.Itoa(int(createTweetOk.Payload.ID))), client2.APIKeyAuth("Authorization", "header", token))
 	hs.Require().Error(err)
 
 }
 
 func (hs *HandlersSuit) TestUpdateTweet() {
-	signupOK, err := hs.deviceRegistry.Description.SignUp(description.NewSignUpParams().WithUser(description.SignUpBody{
+	signupOK, err := hs.twitterClient.Description.SignUp(description.NewSignUpParams().WithUser(description.SignUpBody{
 		Login:    "llw",
 		Password: "123",
 		Name:     "Ole",
@@ -147,21 +147,22 @@ func (hs *HandlersSuit) TestUpdateTweet() {
 	}))
 	hs.Require().NoError(err)
 	token := signupOK.Payload.Token
-	createTweetOk, err := hs.deviceRegistry.Description.CreateTweet(description.NewCreateTweetParams().WithTweet(&models.Tweet{
+
+	createTweetOk, err := hs.twitterClient.Description.CreateTweet(description.NewCreateTweetParams().WithTweet(&models.Tweet{
 		Text: "first tweet",
 	}), client2.APIKeyAuth("Authorization", "header", token))
 	hs.Require().NoError(err)
 	hs.Require().NotNil(createTweetOk)
-	userTweets, err := hs.deviceRegistry.Description.GetAuthorsTweetsByID(description.NewGetAuthorsTweetsByIDParams().WithAuthorID(strconv.Itoa(int(createTweetOk.Payload.AuthorID))))
+	userTweets, err := hs.twitterClient.Description.GetAuthorsTweetsByID(description.NewGetAuthorsTweetsByIDParams().WithAuthorID(strconv.Itoa(int(createTweetOk.Payload.AuthorID))))
 	hs.Require().NoError(err)
 	countOfCreatedTweets := 1
 	hs.Require().NotNil(userTweets)
 	hs.Require().Equal(countOfCreatedTweets, len(userTweets.Payload))
-	_, err = hs.deviceRegistry.Description.UpdateTweet(description.NewUpdateTweetParams().WithTweetID(strconv.Itoa(int(createTweetOk.Payload.ID))).WithTweet(&models.Tweet{
+	_, err = hs.twitterClient.Description.UpdateTweet(description.NewUpdateTweetParams().WithTweetID(strconv.Itoa(int(createTweetOk.Payload.ID))).WithTweet(&models.Tweet{
 		Text: hs.text,
 	}), client2.APIKeyAuth("Authorization", "header", token))
 	hs.NoError(err)
-	updatedTweet, err := hs.deviceRegistry.Description.GetTweetByID(description.NewGetTweetByIDParams().WithTweetID(strconv.Itoa(int(createTweetOk.Payload.ID))))
+	updatedTweet, err := hs.twitterClient.Description.GetTweetByID(description.NewGetTweetByIDParams().WithTweetID(strconv.Itoa(int(createTweetOk.Payload.ID))))
 	hs.Require().NoError(err)
 	hs.Require().Equal(hs.text, updatedTweet.Payload.Text)
 

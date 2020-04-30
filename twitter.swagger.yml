@@ -2,12 +2,7 @@ swagger: '2.0'
 info:
   description: This is a license API in cloud for AxxonNext
   version: 1.0.0
-  title: Trusted Token API
-  # put the contact info for your development or API team
-  contact:
-    email: ilya.timofeev@ru.axxonsoft.com
-
-basePath: /api/v1
+  title: Twitter
 produces:
     - application/json
 consumes:
